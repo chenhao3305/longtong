@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>龙瞳智能组合计算器</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --accent-color: #ff9800;
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+            --text-main: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            /* 底部留出空间 */
+            padding-bottom: 180px; 
+            color: var(--text-main);
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: normal;
+        }
+
+        .container {
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .product-row {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .row-title { font-weight: bold; }
+
+        .delete-btn {
+            background: #ffebee;
+            border: 1px solid #ffcdd2;
+            color: #c62828;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+        }
+
+        .controls { display: flex; gap: 10px; }
+        .select-group { flex: 1; }
+        
+        .select-group label {
+            font-size: 0.8rem;
+            color: #666;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+            font-size: 16px; 
+            height: 44px;
+        }
+
+        /* === 底部固定栏 === */
+        .footer-wrapper {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            border-top: 1px solid #d1d1d1;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+            z-index: 9999; 
+            padding-bottom: env(safe-area-inset-bottom); 
+        }
+
+        .footer-content {
+            padding: 15px 25px 15px 25px; /* 调整底部内边距，适应新的布局 */
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative; 
+        }
+
+        /* 顶部信息和价格区域的分隔 */
+        .result-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .main-result {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .sub-result { 
+            font-size: 1.2rem; 
+            font-weight: bold;
+            color: #444; 
+        }
+
+        /* === 价格栏布局 (三列) === */
+        .price-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch; /* 确保高度一致 */
+            gap: 10px; 
+        }
+
+        .price-item { 
+            text-align: center; 
+            flex: 1; 
+            background-color: #f9f9f9;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* 新增的按钮区域 */
+        .price-toggle-item {
+            flex: 0 0 52px; /* 固定按钮宽度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            padding: 0;
+        }
+
+        /* 价格行内的按钮样式 */
+        .inline-eye-btn {
+            width: 52px; 
+            height: 52px;
+            border-radius: 50%;
+            background-color: var(--primary-color); 
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem; 
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+            transition: background-color 0.2s;
+            padding: 0;
+        }
+
+        .inline-eye-btn:active {
+            background-color: #004494;
+        }
+
+        .price-label {
+            font-size: 0.8rem;
+            color: #666;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .price-value {
+            font-size: 1.4rem; 
+            font-weight: 800; 
+            color: #d32f2f; 
+            display: block;
+            line-height: 1.2;
+        }
+
+        .price-value.guide {
+            color: #333;
+            text-decoration: none; 
+        }
+
+        /* 隐藏模式样式 */
+        .hidden-mode .price-item:not(.price-toggle-item) .price-label,
+        .hidden-mode .price-item:not(.price-toggle-item) .price-value {
+            display: none;
+        }
+        
+        .hidden-mode .price-item:not(.price-toggle-item)::after {
+            content: "****";
+            font-size: 1.4rem;
+            color: #ccc;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .action-buttons { margin-top: 20px; display: flex; gap: 10px; }
+        .btn {
+            flex: 1; padding: 12px; border-radius: 6px;
+            font-size: 1rem; font-weight: bold; border: none;
+        }
+        .btn-add { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .btn-reset { background-color: #f5f5f5; color: #666; border: 1px solid #e0e0e0; flex: 0 0 80px;}
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>龙瞳智能报价</h1>
+</div>
+
+<div class="container" id="app">
+    <div id="product-list"></div>
+
+    <div class="action-buttons">
+        <button class="btn btn-reset" onclick="resetApp()">重置</button>
+        <button class="btn btn-add" onclick="addProductRow()">+ 添加组合</button>
+    </div>
+</div>
+
+<div class="footer-wrapper">
+    <div class="footer-content">
+        
+        <div class="result-summary">
+            <div id="matrix-display" class="main-result">0矩阵</div>
+            <div id="light-display" class="sub-result">0近 0远</div>
+        </div>
+        
+        <div class="price-block" id="price-block">
+            <div class="price-item">
+                <span class="price-label">最低售价</span>
+                <span class="price-value" id="min-price">¥0</span>
+            </div>
+            
+            <div class="price-item">
+                <span class="price-label">指导价</span>
+                <span class="price-value guide" id="guide-price">¥0</span>
+            </div>
+
+            <div class="price-toggle-item">
+                 <button class="inline-eye-btn" id="eye-btn" onclick="togglePriceVisibility()">👁️</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const products = {
+        "T30":  { guide: 1480, min: 880,  low: 2, high: 2 },
+        "T40":  { guide: 1880, min: 1280, low: 2, high: 4 },
+        "T30S": { guide: 880,  min: 600,  low: 2, high: 2 },
+        "S10":  { guide: 1880, min: 1280, low: 2, high: 2 },
+        "S20":  { guide: 2280, min: 1680, low: 2, high: 4 },
+        "S30":  { guide: 2680, min: 2080, low: 2, high: 6 }
+    };
+
+    const quantityOptions = [
+        { val: 0.5, label: "0.5套 (单只)" },
+        { val: 1.0, label: "1套 (一对)" },
+        { val: 1.5, label: "1.5套 (3只)" },
+        { val: 2.0, label: "2套 (4只)" },
+        { val: 2.5, label: "2.5套 (5只)" },
+        { val: 3.0, label: "3套 (6只)" }
+    ];
+
+    let isPriceHidden = false;
+
+    function init() {
+        addProductRow();
+        calculate();
+    }
+
+    function togglePriceVisibility() {
+        isPriceHidden = !isPriceHidden;
+        const priceBlock = document.getElementById('price-block');
+        const btn = document.getElementById('eye-btn');
+        
+        if (isPriceHidden) {
+            priceBlock.classList.add('hidden-mode');
+            btn.innerText = "🙈"; 
+            btn.style.backgroundColor = "#ff9800"; // 隐藏时变橙色
+        } else {
+            priceBlock.classList.remove('hidden-mode');
+            btn.innerText = "👁️";
+            btn.style.backgroundColor = "#0056b3"; // 显示时变蓝色
+        }
+    }
+
+    function addProductRow() {
+        const container = document.getElementById('product-list');
+        const div = document.createElement('div');
+        div.className = 'product-row';
+        
+        let modelOptions = '<option value="" disabled selected>请选择型号</option>';
+        for (let key in products) {
+            modelOptions += `<option value="${key}">${key}</option>`;
+        }
+
+        let qtyOptionsHTML = '';
+        quantityOptions.forEach(opt => {
+            const selected = opt.val === 1.0 ? 'selected' : '';
+            qtyOptionsHTML += `<option value="${opt.val}" ${selected}>${opt.label}</option>`;
+        });
+
+        div.innerHTML = `
+            <div class="row-header">
+                <span class="row-title">组合产品</span>
+                <button class="delete-btn" onclick="removeRow(this)">删除</button>
+            </div>
+            <div class="controls">
+                <div class="select-group">
+                    <label>产品型号</label>
+                    <select class="model-select" onchange="calculate()">
+                        ${modelOptions}
+                    </select>
+                </div>
+                <div class="select-group">
+                    <label>数量</label>
+                    <select class="qty-select" onchange="calculate()">
+                        ${qtyOptionsHTML}
+                    </select>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeRow(btn) {
+        const row = btn.closest('.product-row');
+        row.remove();
+        if (document.getElementById('product-list').children.length === 0) {
+            addProductRow();
+        }
+        calculate();
+    }
+
+    function resetApp() {
+        document.getElementById('product-list').innerHTML = '';
+        addProductRow();
+        calculate();
+    }
+
+    function calculate() {
+        let totalGuide = 0, totalMin = 0, totalLow = 0, totalHigh = 0, totalLenses = 0;
+
+        document.querySelectorAll('.product-row').forEach(row => {
+            const modelKey = row.querySelector('.model-select').value;
+            const qty = parseFloat(row.querySelector('.qty-select').value);
+
+            if (modelKey && products[modelKey]) {
+                const data = products[modelKey];
+                totalGuide += data.guide * qty;
+                totalMin += data.min * qty;
+                totalLow += data.low * qty;
+                totalHigh += data.high * qty;
+                totalLenses += qty * 2; 
+            }
+        });
+
+        updateDisplay({
+            guide: totalGuide,
+            min: totalMin,
+            low: totalLow,
+            high: totalHigh,
+            matrix: totalLenses
+        });
+    }
+
+    function updateDisplay(data) {
+        const formatPrice = (num) => "¥" + Math.round(num);
+        let matrixText = data.matrix > 0 ? cnNumber(data.matrix) + "矩阵" : "未选产品";
+        
+        document.getElementById('matrix-display').innerText = matrixText;
+        document.getElementById('light-display').innerText = `${formatText(data.low)}近 ${formatText(data.high)}远`;
+        document.getElementById('min-price').innerText = formatPrice(data.min);
+        document.getElementById('guide-price').innerText = formatPrice(data.guide);
+    }
+
+    function formatText(num) { return Number.isInteger(num) ? num : num; }
+    function cnNumber(num) {
+        const map = {1:'一', 2:'二', 3:'三', 4:'四', 5:'五', 6:'六', 7:'七', 8:'八', 9:'九', 10:'十'};
+        return map[num] || num;
+    }
+
+    init();
+</script>
+
+</body>
+</html>
